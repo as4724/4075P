@@ -103,8 +103,8 @@ class Trade:
         hhigh = self.data.High[0:self.chnLen].max()
         llow = self.data.Low[0:self.chnLen].min()
         entryPrice = 0
-        openBuy = np.empty([10000,1])
-        openSell = np.empty([10000,1])
+        openBuy = np.empty([len(self.data),1])
+        openSell = np.empty([len(self.data),1])
         netPos = np.zeros([len(self.data),1])
         openBuy[:] = np.NAN
         openSell[:] = np.NAN
@@ -116,17 +116,25 @@ class Trade:
         openSellExec = 0
         prevPeak = 0
         prevTrough = 0
+        pos = 0
         for flag, data in self.data[self.chnLen:-1].iterrows():
            print flag
            openBuyExec = openBuy[data.Close > openBuy]
            openSellExec = openSell[data.Close < openSell]
-           if len(openBuyExec) != 0:
-               openBuy[data.Close > openBuy] = np.NAN
-           if len(openSellExec) != 0:
-               openSell[data.Close < openSell] = np.NAN
-              
-           netPos[flag + 1] = (openBuyExec.size - openSellExec.size) * self.tradeSize
+           pos = (len(openBuyExec) - len(openSellExec)) * self.tradeSize
            
+           if pos != 0:
+               openBuy[data.Close > openBuy] = np.NAN
+               openSell[data.Close < openSell] = np.NAN         
+               if (pos > 0) == (netPos[flag] > 0):
+                       netPos[flag + 1] = netPos[flag] + pos
+               else:
+                       netPos[flag + 1] = pos
+           else:
+               netPos[flag+1] = netPos[flag]
+               
+           
+               
            #Create new orders
            
            hhigh = self.data.High[flag-self.chnLen:flag].max()
@@ -152,16 +160,23 @@ class Trade:
                prevTrough = entryPrice
                if data.Close < prevTrough:
                    prevTrough = data.Close
-               openBuy[np.where(openBuy!=openBuy)[0][0]] = prevTrough*(1+self.stopPct)
-       
-        return netPos*data.Open
+               try:
+                   openBuy[np.where(openBuy!=openBuy)[0][0]] = prevTrough*(1+self.stopPct)
+               except:
+                   
+                   print np.where(openBuy!=openBuy) 
+                   print np.where(openBuy!=openBuy)[0]
+                   print np.where(openBuy!=openBuy)[0][0]
+                   print  openBuy[np.where(openBuy!=openBuy)[0][0]]
+        return netPos
       
        
       
                 
-#data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
-#data.Date = pd.to_datetime(data.Date)
+data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
+data.Date = pd.to_datetime(data.Date)
 data = data[data.Date<'1986-01-01']
 print len(data)
-x = Trade(data,500,0.02)
+x = Trade(data,500,0.005)
 nP=x.startTrade_lite()
+returnP = (data.Open-data.Open.shift(1))/data.Open
