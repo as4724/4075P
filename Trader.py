@@ -6,6 +6,8 @@ Created on Sat Apr 18 20:20:37 2015
 """
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as mp
+
 class Trade:
     #Parameter set:
     chnLen = 0
@@ -101,23 +103,27 @@ class Trade:
         hhigh = self.data.High[0:self.chnLen].max()
         llow = self.data.Low[0:self.chnLen].min()
         entryPrice = 0
-        openBuy = np.empty([100,1])
-        openSell = np.empty([100,1])
+        openBuy = np.empty([10000,1])
+        openSell = np.empty([10000,1])
         netPos = np.zeros([len(self.data),1])
         openBuy[:] = np.NAN
         openSell[:] = np.NAN
-        buyCounter = 0
-        sellCounter = 0
+        #buyCounter = 0
+        #sellCounter = 0
         prevPeak = 0
         prevTrough = 0
-        
+        openBuyExec = 0
+        openSellExec = 0
+        prevPeak = 0
+        prevTrough = 0
         for flag, data in self.data[self.chnLen:-1].iterrows():
+           print flag
            openBuyExec = openBuy[data.Close > openBuy]
            openSellExec = openSell[data.Close < openSell]
            if len(openBuyExec) != 0:
-               openBuy = openBuy[np.logical_not(data.Close > openBuy)]              
+               openBuy[data.Close > openBuy] = np.NAN
            if len(openSellExec) != 0:
-               openSell = openSell[np.logical_not(data.Close < openSell)] 
+               openSell[data.Close < openSell] = np.NAN
               
            netPos[flag + 1] = (openBuyExec.size - openSellExec.size) * self.tradeSize
            
@@ -127,30 +133,35 @@ class Trade:
            llow = self.data.Low[flag-self.chnLen:flag].min()
            
            if netPos[flag] == 0:
-               openBuy[buyCounter] = hhigh
-               buyCounter += 1
-               openSell[sellCounter] = llow
-               sellCounter += 1
+               try:
+                   openBuy[np.where(openBuy!=openBuy)[0][0]] = hhigh
+                   #buyCounter += 1
+                   openSell[np.where(openSell!=openSell)[0][0]] = llow
+                   #sellCounter += 1    
+               except:
+                   print 'Exception'
            elif(netPos[flag] > 0):
                entryPrice = data.Open
                prevPeak = entryPrice
                if data.Close > self.prevPeak:
                    prevPeak = data.Close
-               openSell[sellCounter] = prevPeak*(1-self.stopPct)
-               sellCounter += 1
+               openSell[np.where(openSell!=openSell)[0][0]] = prevPeak*(1-self.stopPct)
+               #sellCounter += 1
            else:
                entryPrice = data.Open
                prevTrough = entryPrice
                if data.Close < prevTrough:
                    prevTrough = data.Close
-               openBuy[buyCounter] = prevTrough*(1+self.stopPct)
-               
-               
+               openBuy[np.where(openBuy!=openBuy)[0][0]] = prevTrough*(1+self.stopPct)
+       
+        return netPos*data.Open
+      
        
       
                 
-data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
+#data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
+#data.Date = pd.to_datetime(data.Date)
 data = data[data.Date<'1986-01-01']
 print len(data)
 x = Trade(data,500,0.02)
-x.startTrade_lite()
+nP=x.startTrade_lite()
