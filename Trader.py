@@ -136,12 +136,26 @@ class Trade:
         highP = np.array(self.data.High)
         lowP = np.array(self.data.Low)
         
-        def get_nan():
-            for i in range(len(openBuy),0,-500):
-                t=np.where(openBuy[i:i-500]!=openBuy[i:i-500])[0]
-                if len(t)!=0:
+        def find_nan_openBuy():
+            t=0
+            q=0
+            for i in range(5000,500,-500):
+                q=openBuy[i-500:i]
+                t=np.where(q!=q)[0]
+                if len(t) != 0:
                     return t[0]
-                return -1
+            return -1
+
+        def find_nan_openSell():
+            t=0
+            q=0
+            for i in range(5000,500,-500):
+                q=openSell[i-500:i]
+                t=np.where(q!=q)[0]
+                if len(t) != 0:
+                    return t[0]
+            return -1
+            
         for flag, close in np.ndenumerate(closeP[self.chnLen:-1]):
           # print flag[0]
            flag = flag[0]+self.chnLen
@@ -169,9 +183,9 @@ class Trade:
            
            if netPos[flag] == 0:
                try:
-                   openBuy[get_nan()] = hhigh
+                   openBuy[find_nan_openBuy()] = float(hhigh)
                    #buyCounter += 1
-                   openSell[get_nan()] = llow
+                   openSell[find_nan_openSell()] = float(llow)
                    #sellCounter += 1    
                except:
                    print 'Exception'
@@ -180,7 +194,7 @@ class Trade:
                prevPeak = entryPrice
                if close > prevPeak:
                    prevPeak = close
-               openSell[get_nan()] = prevPeak*(1-self.stopPct)
+               openSell[find_nan_openSell()] = float(prevPeak*(1-self.stopPct))
                #sellCounter += 1
            else:
                entryPrice = openP[flag]
@@ -188,32 +202,72 @@ class Trade:
                if close < prevTrough:
                    prevTrough = close
                
-               openBuy[get_nan()] = prevTrough*(1+self.stopPct)
-               
-        return netPos
+               openBuy[find_nan_openBuy()] = float(prevTrough*(1+self.stopPct))
+        openP = np.array(data.Open)
+        change =  np.diff(openP)
+        pv = 50
+        slippage = .31
+        netPos = np.array([item for sublist in netPos.tolist() for item in sublist])
+        pnl = np.cumsum(netPos[0:-1]*change*pv+slippage*np.diff(netPos)*0.5)
+        netProfit = pnl[-1]
+        loc_minpnl = pnl.argmin()
+        max_drawdown = pnl[0:loc_minpnl].max()-pnl[loc_minpnl]
+                          
+        return (netProfit/max_drawdown)
 
 #Do these two lines first before running code the first time (expensive)
-#data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
-#data.Date = pd.to_datetime(data.Date)
+if 'data' not in globals():
+    data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
+    data.Date = pd.to_datetime(data.Date)
+    data = data[data.Date<'1986-01-01']
 #x = Trade(data,500,0.005)
 #y=data.Close
 #y[16555]=np.nan
 #print x.find_nan(y)
 
-import cProfile, pstats, StringIO
-pr = cProfile.Profile()
-pr.enable()
-data = data[data.Date<'1986-01-01']
-print len(data)
-x = Trade(data,500,0.005)
-nP=x.startTrade_lite()
-pr.disable()
-s = StringIO.StringIO()
-sortby = 'cumulative'
-ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-ps.print_stats()
-print s.getvalue() 
-                
+#import cProfile, pstats, StringIO
+#pr = cProfile.Profile()
+#pr.enable()
+#data = data[data.Date<'1986-01-01']
+#print len(data)
+#x = Trade(data,500,0.005)
+#nP=x.startTrade_lite()
+#pr.disable()
+#s = StringIO.StringIO()
+#sortby = 'cumulative'
+#ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+#ps.print_stats()
+#print s.getvalue() 
+
+def xx(p,q,r):
+    stopPct = np.arange(0.005,0.10,0.001)
+    chanLen = np.arange(p,q,100)
+    x=0
+    netPtoDD = np.zeros([len(chanLen), len(stopPct)])
+    k = 0
+    for i,chanLen1 in np.ndenumerate(chanLen):
+        for j, stopPct1 in np.ndenumerate(stopPct):
+           x = Trade(data,chanLen1,stopPct1)
+           netPtoDD[i,j] = x.startTrade_lite()
+           k += 1
+           print k
+        
+    import pickle
+    pickle.dump(netPtoDD, open( r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD'+str(r)+'.p', "wb" ) )
+    
+xx(2500,5000,1)
+#net = pickle.load(open( r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD.p', "rb"))
+#pnl calculation
+#openP = np.array(data.Open)
+#change =  np.diff(openP)
+#pv = 50
+#slippage = 31
+#np.array([item for sublist in nP.tolist() for item in sublist])
+#pnl = np.cumsum(nP[0:-1]*change*pv+slippage*np.diff(nP)*0.5)
+#netProfit = pnl[-1]
+#loc_minpnl = pnl.argmin()
+#max_drawdown = pnl[0:loc_minpnl].max()-pnl[loc_minpnl]
+#netProfit/max_drawdown              
 #returnP = (data.Open-data.Open.shift(1))
 #pnl = np.zeros([len(data),1])
 #pnl[0]= data.Open[0]*nP[0]
