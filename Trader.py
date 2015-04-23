@@ -42,7 +42,22 @@ class Trade:
         self.orderExit = pd.DataFrame(index = np.arange(0,100), columns=('dateout','timeout','qty','priceout','position'))
         self.orderOpen = pd.DataFrame(columns=('date','time','qty','price','type'))
         
-   
+
+    def find_nan(self,vec):
+        """return the index of the first occurence of nan in vec"""
+        r = np.arange(0, len(vec), 500)
+        temp=0
+        t=0
+        for i in range(0,len(r)-1):
+            temp = vec[r[i]:r[i+1]]
+            t = np.where(temp!=temp)[0]
+            if len(t)!=0:
+                return t[0]+r[i] 
+        temp = vec[r[i+1]:]
+        t = np.where(temp!=temp)[0]
+        if len(t)!=0:
+            return t[0] + len(t)
+        return -1
 #    def startTrade(self):
 #        i = 0
 #        entryPrice = 0
@@ -97,14 +112,13 @@ class Trade:
 #                   self.prevTrough = d.Close
 #               self.orderOpen.loc[i] = [d.Date, d.Time, self.tradeSize, self.prevTrough * (1+self.stopPct), 'stop']
 #               i += 1
-               
+    
     def startTrade_lite(self):
         entryPrice = 0
-        hhigh = self.data.High[0:self.chnLen].max()
-        llow = self.data.Low[0:self.chnLen].min()
-        entryPrice = 0
-        openBuy = np.empty([len(self.data),1])
-        openSell = np.empty([len(self.data),1])
+        #hhigh = self.data.High[0:self.chnLen].max()
+        #llow = self.data.Low[0:self.chnLen].min()
+        openBuy = np.empty([5000,1])
+        openSell = np.empty([5000,1])
         netPos = np.zeros([len(self.data),1])
         openBuy[:] = np.NAN
         openSell[:] = np.NAN
@@ -117,15 +131,22 @@ class Trade:
         prevPeak = 0
         prevTrough = 0
         pos = 0
-        for flag, data in self.data[self.chnLen:-1].iterrows():
-           print flag
-           openBuyExec = openBuy[data.Close > openBuy]
-           openSellExec = openSell[data.Close < openSell]
+        closeP = np.array(self.data.Close)
+        openP= np.array(self.data.Open)
+        highP = np.array(self.data.High)
+        lowP = np.array(self.data.Low)
+        
+        for flag, close in np.ndenumerate(closeP[self.chnLen:-1]):
+          # print flag[0]
+           flag = flag[0]+self.chnLen
+           openBuyExec = openBuy[close > openBuy]
+           openSellExec = openSell[close < openSell]
            pos = (len(openBuyExec) - len(openSellExec)) * self.tradeSize
            
            if pos != 0:
-               openBuy[data.Close > openBuy] = np.NAN
-               openSell[data.Close < openSell] = np.NAN         
+               openBuy[close > openBuy] = np.NAN
+               openSell[close < openSell] = np.NAN
+               
                if (pos > 0) == (netPos[flag] > 0):
                        netPos[flag + 1] = netPos[flag] + pos
                else:
@@ -137,8 +158,8 @@ class Trade:
                
            #Create new orders
            
-           hhigh = self.data.High[flag-self.chnLen:flag].max()
-           llow = self.data.Low[flag-self.chnLen:flag].min()
+           hhigh = highP[flag-self.chnLen:flag].max()
+           llow = lowP[flag-self.chnLen:flag].min()
            
            if netPos[flag] == 0:
                try:
@@ -149,34 +170,50 @@ class Trade:
                except:
                    print 'Exception'
            elif(netPos[flag] > 0):
-               entryPrice = data.Open
+               entryPrice = openP[flag]
                prevPeak = entryPrice
-               if data.Close > self.prevPeak:
-                   prevPeak = data.Close
+               if close > prevPeak:
+                   prevPeak = close
                openSell[np.where(openSell!=openSell)[0][0]] = prevPeak*(1-self.stopPct)
                #sellCounter += 1
            else:
-               entryPrice = data.Open
+               entryPrice = openP[flag]
                prevTrough = entryPrice
-               if data.Close < prevTrough:
-                   prevTrough = data.Close
-               try:
-                   openBuy[np.where(openBuy!=openBuy)[0][0]] = prevTrough*(1+self.stopPct)
-               except:
-                   
-                   print np.where(openBuy!=openBuy) 
-                   print np.where(openBuy!=openBuy)[0]
-                   print np.where(openBuy!=openBuy)[0][0]
-                   print  openBuy[np.where(openBuy!=openBuy)[0][0]]
+               if close < prevTrough:
+                   prevTrough = close
+               
+               openBuy[np.where(openBuy!=openBuy)[0][0]] = prevTrough*(1+self.stopPct)
+               
         return netPos
-      
-       
-      
-                
-data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
-data.Date = pd.to_datetime(data.Date)
+
+#Do these two lines first before running code the first time (expensive)
+#data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
+#data.Date = pd.to_datetime(data.Date)
+#x = Trade(data,500,0.005)
+#y=data.Close
+#y[16555]=np.nan
+#print x.find_nan(y)
+
+import cProfile, pstats, StringIO
+pr = cProfile.Profile()
+pr.enable()
 data = data[data.Date<'1986-01-01']
 print len(data)
 x = Trade(data,500,0.005)
 nP=x.startTrade_lite()
-returnP = (data.Open-data.Open.shift(1))/data.Open
+pr.disable()
+s = StringIO.StringIO()
+sortby = 'cumulative'
+ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+ps.print_stats()
+print s.getvalue() 
+                
+#returnP = (data.Open-data.Open.shift(1))
+#pnl = np.zeros([len(data),1])
+#pnl[0]= data.Open[0]*nP[0]
+#i=0
+#for d in pnl:
+#    if i==0:
+#        continue
+#    pnl[i]=pnl[i-1]+returnP[i]*nP[i]
+#    i += 1
