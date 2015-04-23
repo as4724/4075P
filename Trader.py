@@ -136,6 +136,12 @@ class Trade:
         highP = np.array(self.data.High)
         lowP = np.array(self.data.Low)
         
+        def get_nan():
+            for i in range(len(openBuy),0,-500):
+                t=np.where(openBuy[i:i-500]!=openBuy[i:i-500])[0]
+                if len(t)!=0:
+                    return t[0]
+                return -1
         for flag, close in np.ndenumerate(closeP[self.chnLen:-1]):
           # print flag[0]
            flag = flag[0]+self.chnLen
@@ -163,9 +169,9 @@ class Trade:
            
            if netPos[flag] == 0:
                try:
-                   openBuy[np.where(openBuy!=openBuy)[0][0]] = hhigh
+                   openBuy[get_nan()] = hhigh
                    #buyCounter += 1
-                   openSell[np.where(openSell!=openSell)[0][0]] = llow
+                   openSell[get_nan()] = llow
                    #sellCounter += 1    
                except:
                    print 'Exception'
@@ -174,7 +180,7 @@ class Trade:
                prevPeak = entryPrice
                if close > prevPeak:
                    prevPeak = close
-               openSell[np.where(openSell!=openSell)[0][0]] = prevPeak*(1-self.stopPct)
+               openSell[get_nan()] = prevPeak*(1-self.stopPct)
                #sellCounter += 1
            else:
                entryPrice = openP[flag]
@@ -182,7 +188,7 @@ class Trade:
                if close < prevTrough:
                    prevTrough = close
                
-               openBuy[np.where(openBuy!=openBuy)[0][0]] = prevTrough*(1+self.stopPct)
+               openBuy[get_nan()] = prevTrough*(1+self.stopPct)
                
         return netPos
 
