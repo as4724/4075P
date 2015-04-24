@@ -219,7 +219,7 @@ class Trade:
 if 'data' not in globals():
     data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
     data.Date = pd.to_datetime(data.Date)
-    data = data[data.Date<'1986-01-01']
+    data = data[np.logical_and(data.Date<'2014-01-01',data.Date>'2010-01-01')]
 #x = Trade(data,500,0.005)
 #y=data.Close
 #y[16555]=np.nan
@@ -239,7 +239,7 @@ if 'data' not in globals():
 #ps.print_stats()
 #print s.getvalue() 
 
-def xx(p,q,r):
+def getResult(p,q,r):
     stopPct = np.arange(0.005,0.10,0.001)
     chanLen = np.arange(p,q,100)
     x=0
@@ -252,9 +252,20 @@ def xx(p,q,r):
            k += 1
            print k
            
-    np.save(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD'+str(r), xx)
+    np.save(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD'+str(r), netPtoDD)
+    
     return netPtoDD
-xx = xx(7500,10000,2)
+    
+#data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
+#data.Date = pd.to_datetime(data.Date)
+#data = data[np.logical_and(data.Date<'2002-01-01',data.Date>'1998-01-01')]
+#
+#x1 = getResult(500,10000,1)
+data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\CO-5min.asc'))
+data.Date = pd.to_datetime(data.Date)
+data = data[np.logical_and(data.Date<'2002-01-01',data.Date>'1998-01-01')]
+
+x2 = getResult(500,10000,2)
 #net = np.load(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD2500-5000.npy')
 #pnl calculation
 #openP = np.array(data.Open)
