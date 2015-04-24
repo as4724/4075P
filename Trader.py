@@ -251,12 +251,11 @@ def xx(p,q,r):
            netPtoDD[i,j] = x.startTrade_lite()
            k += 1
            print k
-        
-    import pickle
-    pickle.dump(netPtoDD, open( r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD'+str(r)+'.p', "wb" ) )
-    
-xx(2500,5000,1)
-#net = pickle.load(open( r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD.p', "rb"))
+           
+    np.save(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD'+str(r), xx)
+    return netPtoDD
+xx = xx(7500,10000,2)
+#net = np.load(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD2500-5000.npy')
 #pnl calculation
 #openP = np.array(data.Open)
 #change =  np.diff(openP)
