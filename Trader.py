@@ -212,7 +212,7 @@ class Trade:
         netProfit = pnl[-1]
         loc_minpnl = pnl.argmin()
         max_drawdown = pnl[0:loc_minpnl].max()-pnl[loc_minpnl]
-                          
+       
         return (netProfit/max_drawdown)
 
 #Do these two lines first before running code the first time (expensive)
@@ -241,7 +241,7 @@ if 'data' not in globals():
 
 def getResult(p,q,r):
     stopPct = np.arange(0.005,0.10,0.001)
-    chanLen = np.arange(p,q,100)
+    chanLen = np.arange(p,q,10)
     x=0
     netPtoDD = np.zeros([len(chanLen), len(stopPct)])
     k = 0
@@ -255,17 +255,27 @@ def getResult(p,q,r):
     np.save(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD'+str(r), netPtoDD)
     
     return netPtoDD
-    
+
+getResult(3900,4100,21)
 #data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\WC-5min.asc'))
 #data.Date = pd.to_datetime(data.Date)
-#data = data[np.logical_and(data.Date<'2002-01-01',data.Date>'1998-01-01')]
-#
-#x1 = getResult(500,10000,1)
+#data1 = data[np.logical_and(data.Date<'2008-01-01',data.Date>'2007-01-01')]
+#res = Trade(data1,2800,0.012)
+#re = res.startTrade_lite()
+#x1 = getResult(500,2500,1)
+#x2 = getResult(2500,5000,2)
+# x3 = getResult(5000,7500,3)
+#x4 = getResult(7500,10000,4)
+
+
 data = (pd.read_csv(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\CO-5min.asc'))
 data.Date = pd.to_datetime(data.Date)
-data = data[np.logical_and(data.Date<'2002-01-01',data.Date>'1998-01-01')]
+data = data[np.logical_and(data.Date<'2007-01-01',data.Date>'2006-01-01')]
 
-x2 = getResult(500,10000,2)
+#y1 = getResult(500,2500,5)
+#y2 = getResult(2500,5000,6)
+#y3 = getResult(5000,7500,7)
+#y4 = getResult(7500,10000,8)
 #net = np.load(r'C:\Users\Akshat Sinha\Dropbox\Classes\4075P\netPtoDD2500-5000.npy')
 #pnl calculation
 #openP = np.array(data.Open)
